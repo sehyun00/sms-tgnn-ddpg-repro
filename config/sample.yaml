@@ -1,0 +1,60 @@
+# Alias config for README examples and CI smoke tests.
+# It intentionally mirrors config.yaml so `--config config/sample.yaml` is stable.
+
+project:
+  name: "sms-tgnn-ddpg-repro"
+  seed: 42
+  device: "cpu"
+  selected_model: "tgnn"
+
+paths:
+  data_dir: "data"
+  results_dir: "results"
+
+data:
+  raw_prices_path: "tests/fixtures/sample_prices.csv"
+  start_year: 2020
+  end_year: 2021
+  window_size: 5
+  predict_window: 1
+  stock_universes: ["AAA", "BBB", "CCC"]
+  features: ["Open", "High", "Low", "Close", "Volume"]
+  factors: true
+
+model:
+  softmax_temperature: 3.0
+  reproducibility:
+    deterministic: true
+    cudnn_benchmark: false
+    seed: 42
+  hybrid_alpha_min: 0.1
+  hybrid_alpha_max: 0.9
+  hybrid_alpha_mode: "fixed"
+  hybrid_horizon_dim: 8
+  hybrid_warmup_episodes: 1
+  hybrid:
+    tgnn_checkpoint: null
+  tgnn:
+    hidden_dim: 64
+    num_heads: 4
+    dropout: 0.1
+  ddpg:
+    actor_lr: 0.0001
+    critic_lr: 0.001
+    gamma: 0.99
+    tau: 0.001
+    batch_size: 2
+    weight_decay: 0.00001
+    noise_std: 0.05
+
+training:
+  episodes: 1
+  early_stopping: 50
+  batch_size: 2
+  buffer_size: 128
+  test_split_date: "2021-01-01"
+
+backtest:
+  initial_capital: 1000000
+  transaction_cost: 0.001
+  risk_free_rate: 0.02

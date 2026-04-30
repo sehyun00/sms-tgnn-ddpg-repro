@@ -1,0 +1,12 @@
+torch
+pandas>=2.0,<3.0
+numpy
+pyyaml
+pytest
+scikit-learn
+pandas-datareader
+yfinance
+requests
+matplotlib
+seaborn
+lxml

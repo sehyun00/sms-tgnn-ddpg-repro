@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local data and generated experiment artifacts
+data/
+results/
+logs/
+checkpoints/
+*.log
+*.pth
+*.pt
+*.ckpt
+*.png
+
+# Local secrets and machine files
+.env
+.env.*
+.idea/
+.vscode/
+
+# Research workspace assets intentionally excluded from the public repo
+.agent/
+.agents/
+.claude/
+.codex/
+academic_papers/
+reports/
+*_backup
