@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from typing import Dict, Any, Tuple
+from typing import Any, Dict
 from src.models.base_model import BaseModel
 from .actor import DDPGActor
 from .critic import Critic
@@ -44,6 +44,7 @@ class DDPGAgent(BaseModel):
             "batch_size", training_conf.get("batch_size", 64)
         )
         self.temperature = config["model"].get("softmax_temperature", 1.0)
+        self.entropy_coefficient = float(ddpg_conf.get("entropy_coefficient", 0.01))
 
         # Networks
         # Networks
@@ -154,7 +155,7 @@ class DDPGAgent(BaseModel):
         actor_loss = -self.critic(states, pred_actions).mean()
 
         # Entropy Regularization (Optional, from legacy)
-        entropy_bonus = 0.01 * pred_entropy.mean()  # 0.01 coeff
+        entropy_bonus = self.entropy_coefficient * pred_entropy.mean()
         total_actor_loss = actor_loss - entropy_bonus
 
         self.actor_optimizer.zero_grad()

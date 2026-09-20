@@ -39,10 +39,18 @@ class TemporalAttention(nn.Module):
         # Permute to [batch*N, T, D] for processing time series of each node independently
         x_reshaped = x.permute(0, 2, 1, 3).reshape(batch * N, T, D)
 
-        attn_out, attn_weights = self.attention(x_reshaped, x_reshaped, x_reshaped)
-        
-        # Reshape attention weights: [batch*N, T, T] -> [batch, N, T, T]
-        attn_weights = attn_weights.reshape(batch, N, T, T)
+        attn_out, attn_weights = self.attention(
+            x_reshaped,
+            x_reshaped,
+            x_reshaped,
+            need_weights=return_attn_weights,
+            average_attn_weights=False,
+        )
+
+        # Preserve heads for reproducible XAI aggregation:
+        # [batch*N, heads, T, T] -> [batch, N, heads, T, T].
+        if return_attn_weights:
+            attn_weights = attn_weights.reshape(batch, N, self.attention.num_heads, T, T)
 
         # Take the last time step: [batch*N, D] -> [batch, N, D]
         out = attn_out[:, -1, :].reshape(batch, N, D)

@@ -35,3 +35,6 @@ checkpoints/
 academic_papers/
 reports/
 *_backup
+*.pdf
+*.hwp
+*.hwpx

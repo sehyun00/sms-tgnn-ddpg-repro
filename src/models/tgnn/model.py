@@ -82,7 +82,13 @@ class TGNN(BaseModel):
         # Input to predictor = Node Embedding + Global Context
         fusion_dim = gcn_hidden_dims[-1] + macro_hidden_dim
 
-        self.heads = ["Momentum1M", "Momentum3M", "Momentum6M", "Momentum12M"]
+        configured_heads = config.get("data", {}).get("target_heads")
+        self.heads = list(configured_heads) if configured_heads else [
+            "Momentum1M",
+            "Momentum3M",
+            "Momentum6M",
+            "Momentum12M",
+        ]
         self.predictors = nn.ModuleDict(
             {head: self._make_predictor(fusion_dim) for head in self.heads}
         )
@@ -108,7 +114,7 @@ class TGNN(BaseModel):
         x: torch.Tensor,
         adj: torch.Tensor,
         macro: torch.Tensor = None,
-        target_type: str = "Momentum1M",
+        target_type: str | None = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -184,10 +190,11 @@ class TGNN(BaseModel):
         else:
             combined_embedding = node_embeddings
 
+        target_type = target_type or self.heads[0]
         if target_type in self.predictors:
             predictions = self.predictors[target_type](combined_embedding).squeeze(-1)
         else:
-            predictions = self.predictors["Momentum1M"](combined_embedding).squeeze(-1)
+            predictions = self.predictors[self.heads[0]](combined_embedding).squeeze(-1)
 
         if return_attn:
             return predictions, combined_embedding, attn_weights
@@ -203,7 +210,7 @@ class TGNN(BaseModel):
             )
             macro = batch["macro"].to(self.device) if "macro" in batch else None
             adj = batch["adj_matrix"].to(self.device)
-            preds, _ = self.forward(x, adj, macro=macro, target_type="Momentum1M")
+            preds, _ = self.forward(x, adj, macro=macro, target_type=self.heads[0])
         return preds.cpu()
 
     def get_portfolio_weights(

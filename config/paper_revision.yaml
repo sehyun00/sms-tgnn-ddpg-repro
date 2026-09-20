@@ -1,0 +1,132 @@
+project:
+  name: sms-tgnn-ddpg-major-revision
+  experiment_id: paper-v1
+  device: cuda
+  deterministic: true
+
+paths:
+  prepared_dir: data/revision/paper-v1
+  results_dir: results/revision/paper-v1
+
+data:
+  provider: yfinance
+  source_start: "2004-01-02"
+  source_end_exclusive: "2026-01-01"
+  membership:
+    as_of: "2020-12-31"
+    revision_id: 997494787
+    url: "https://en.wikipedia.org/w/index.php?title=List_of_S%26P_500_companies&oldid=997494787"
+  universe:
+    selection_salt: sms-major-revision-v1
+    minimum_coverage: 0.98
+    per_sector_train: 5
+    reserve_size: 5
+    exact_test_symbols: [MMM, ABT, ACN, AFL, APD, ARE, GOOGL, MO, AMZN, APA]
+  window_size: 60
+  graph_lookback: 60
+  target_horizons: [1, 5, 21, 63]
+  target_heads:
+    Return1D: ForwardReturn1D
+    Return1W: ForwardReturn5D
+    Return1M: ForwardReturn21D
+    Return1Q: ForwardReturn63D
+  features:
+    - Ret1D
+    - OpenRel
+    - HighRel
+    - LowRel
+    - CloseRel20
+    - VolumeZ20
+    - Momentum5
+    - Momentum21
+    - Momentum63
+    - Momentum252
+    - Volatility20
+    - RSI14
+    - MACDHist
+  macro_features: [Mkt_RF, SMB, HML, RMW, CMA]
+
+folds:
+  primary:
+    train: {start: "2006-01-03", end: "2017-12-29"}
+    validation: {start: "2018-01-02", end: "2020-12-31"}
+    test: {start: "2021-01-04", end: "2025-12-31"}
+    seeds: [0, 42, 123, 456, 789, 1024, 2024, 31415, 65537, 99991]
+  secondary:
+    train: {start: "2006-01-03", end: "2014-12-31"}
+    validation: {start: "2015-01-02", end: "2017-12-29"}
+    test: {start: "2018-01-02", end: "2020-12-31"}
+    seeds: [0, 42, 123, 456, 789]
+
+model:
+  softmax_temperature: 3.0
+  tgnn:
+    hidden_dim: 64
+    num_heads: 4
+    dropout: 0.1
+    learning_rate: 0.0001
+    mse_weight: 0.7
+    ranking_weight: 0.3
+  ddpg:
+    actor_lr: 0.0001
+    critic_lr: 0.001
+    gamma: 0.99
+    tau: 0.001
+    batch_size: 64
+    entropy_coefficient: 0.0
+    noise_start: 0.20
+    noise_end: 0.02
+  td3:
+    actor_lr: 0.0001
+    critic_lr: 0.001
+    gamma: 0.99
+    tau: 0.001
+    batch_size: 64
+    target_noise: 0.20
+    noise_clip: 0.50
+    policy_delay: 2
+    noise_start: 0.20
+    noise_end: 0.02
+  alpha:
+    minimum: 0.1
+    maximum: 0.9
+    hidden_dim: 128
+    learning_rate: 0.0001
+    epochs: 300
+    patience: 30
+
+training:
+  tgnn_max_epochs: 200
+  tgnn_early_stopping_patience: 20
+  rl_max_epochs: 50
+  rl_early_stopping_patience_evaluations: 8
+  gradient_steps_per_epoch: 64
+  evaluation_interval: 5
+  checkpoint_interval: 5
+  batch_size: 64
+  buffer_size: 10000
+  training_cost_bps: 10
+
+backtest:
+  initial_capital: 1000000
+  frequencies: [daily, weekly, monthly, quarterly]
+  primary_frequency: quarterly
+  cost_bps: [0, 5, 10, 20]
+  primary_cost_bps: 10
+  covariance_lookback: 252
+  graph_modes: [sector, correlation, combined]
+  primary_graph: combined
+
+statistics:
+  bootstrap_iterations: 10000
+  block_length: 20
+  confidence_level: 0.95
+  primary_model: hybrid
+  primary_comparators: [tgnn, ddpg, td3, hybrid_fixed, equal_weight]
+
+xai:
+  dates: 100
+  mask_fraction: 0.10
+  random_masks_per_date: 100
+  faithfulness_fraction_threshold: 0.75
+  seed: 20260907
